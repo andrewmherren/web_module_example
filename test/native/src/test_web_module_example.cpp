@@ -16,7 +16,7 @@ using namespace fakeit;
 static void test_module_metadata() {
   WebModuleExample module;
   TEST_ASSERT_EQUAL_STRING("Web Module Example", module.getModuleName().c_str());
-  TEST_ASSERT_EQUAL_STRING("0.1.0", module.getModuleVersion().c_str());
+  TEST_ASSERT_EQUAL_STRING(WEB_MODULE_VERSION_STR, module.getModuleVersion().c_str());
   TEST_ASSERT_TRUE_MESSAGE(module.getModuleDescription().length() > 0,
                            "Description should be non-empty");
 }

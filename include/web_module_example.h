@@ -12,6 +12,7 @@
 #include <interface/web_module_interface.h>
 #include <utility>
 #include <web_platform_interface.h>
+#include "version_autogen.h"
 
 /**
  * @brief Example/boilerplate web module for WebPlatform
@@ -44,7 +45,12 @@ public:
   
   // Module metadata
   String getModuleName() const override { return "Web Module Example"; }
-  String getModuleVersion() const override { return "0.1.0"; }
+  // Version must be injected at build time from library.json as WEB_MODULE_VERSION_STR
+  // via PlatformIO extra_script. Intentionally fail build if missing.
+#ifndef WEB_MODULE_VERSION_STR
+#error "WEB_MODULE_VERSION_STR not defined (version_autogen.h missing)."
+#endif
+  String getModuleVersion() const override { return WEB_MODULE_VERSION_STR; }
   String getModuleDescription() const override {
     return "Example/boilerplate web module - customize for your needs";
   }
