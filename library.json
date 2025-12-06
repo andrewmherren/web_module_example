@@ -22,5 +22,5 @@
     "frameworks": "*",
     "platforms": [
         "espressif32"
-    ],
+    ]
 }
