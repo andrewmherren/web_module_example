@@ -26,7 +26,7 @@ void test_esp32_begin_does_not_crash() {
 void test_esp32_begin_with_config_does_not_crash() {
   WebModuleExample module;
   
-  DynamicJsonDocument config(256);
+  JsonDocument config;
   config["enabled"] = true;
   config["exampleValue"] = 42;
   
