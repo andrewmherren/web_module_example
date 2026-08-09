@@ -38,7 +38,7 @@ static void test_parseConfig_with_null_config() {
 
 static void test_parseConfig_with_all_fields() {
   WebModuleExample module;
-  DynamicJsonDocument doc(256);
+  JsonDocument doc;
   doc["enabled"] = false;
   doc["exampleValue"] = 42;
   doc["exampleString"] = "custom";
@@ -52,7 +52,7 @@ static void test_parseConfig_with_all_fields() {
 
 static void test_parseConfig_partial_fields() {
   WebModuleExample module;
-  DynamicJsonDocument doc(256);
+  JsonDocument doc;
   doc["exampleValue"] = 99;
 
   module.__test_applyConfig(doc.as<JsonVariant>());
@@ -70,7 +70,7 @@ static void test_begin_with_config_variant() {
       .AlwaysReturn(1);
   When(Method(ArduinoFake(), millis)).AlwaysReturn(0);
 
-  DynamicJsonDocument doc(256);
+  JsonDocument doc;
   doc["enabled"] = false;
   doc["exampleValue"] = 123;
 
@@ -172,21 +172,21 @@ static void test_statusHandler_builds_json() {
   
   TEST_ASSERT_EQUAL_STRING("application/json", res.getMimeType().c_str());
   
-  StaticJsonDocument<512> doc;
+  JsonDocument doc;
   DeserializationError err = deserializeJson(doc, res.getContent());
   TEST_ASSERT_FALSE_MESSAGE(err, "JSON parse error");
   
-  TEST_ASSERT_TRUE(doc.containsKey("success"));
-  TEST_ASSERT_TRUE(doc.containsKey("enabled"));
-  TEST_ASSERT_TRUE(doc.containsKey("exampleValue"));
-  TEST_ASSERT_TRUE(doc.containsKey("exampleString"));
-  TEST_ASSERT_TRUE(doc.containsKey("uptime"));
+  TEST_ASSERT_FALSE(doc["success"].isNull());
+  TEST_ASSERT_FALSE(doc["enabled"].isNull());
+  TEST_ASSERT_FALSE(doc["exampleValue"].isNull());
+  TEST_ASSERT_FALSE(doc["exampleString"].isNull());
+  TEST_ASSERT_FALSE(doc["uptime"].isNull());
 }
 
 static void test_statusHandler_reflects_configuration() {
   WebModuleExample module;
   
-  DynamicJsonDocument config(256);
+  JsonDocument config;
   config["enabled"] = false;
   config["exampleValue"] = 777;
   module.__test_applyConfig(config.as<JsonVariant>());
@@ -195,7 +195,7 @@ static void test_statusHandler_reflects_configuration() {
   WebResponseCore res;
   module.statusHandler(req, res);
   
-  StaticJsonDocument<512> doc;
+  JsonDocument doc;
   deserializeJson(doc, res.getContent());
   
   TEST_ASSERT_FALSE(doc["enabled"].as<bool>());
@@ -205,7 +205,7 @@ static void test_statusHandler_reflects_configuration() {
 static void test_configHandler_returns_current_config() {
   WebModuleExample module;
   
-  DynamicJsonDocument config(256);
+  JsonDocument config;
   config["enabled"] = false;
   config["exampleValue"] = 555;
   config["exampleString"] = "test";
@@ -215,7 +215,7 @@ static void test_configHandler_returns_current_config() {
   WebResponseCore res;
   module.configHandler(req, res);
   
-  StaticJsonDocument<512> doc;
+  JsonDocument doc;
   deserializeJson(doc, res.getContent());
   
   TEST_ASSERT_FALSE(doc["enabled"].as<bool>());
@@ -233,10 +233,10 @@ static void test_updateConfigHandler_invalid_json_400() {
   
   TEST_ASSERT_EQUAL(400, res.getStatus());
   
-  StaticJsonDocument<256> doc;
+  JsonDocument doc;
   deserializeJson(doc, res.getContent());
   TEST_ASSERT_FALSE(doc["success"].as<bool>());
-  TEST_ASSERT_TRUE(doc.containsKey("error"));
+  TEST_ASSERT_FALSE(doc["error"].isNull());
 }
 
 static void test_updateConfigHandler_success() {
@@ -257,7 +257,7 @@ static void test_updateConfigHandler_success() {
   
   TEST_ASSERT_EQUAL(200, res.getStatus());
   
-  StaticJsonDocument<256> doc;
+  JsonDocument doc;
   deserializeJson(doc, res.getContent());
   TEST_ASSERT_TRUE(doc["success"].as<bool>());
   TEST_ASSERT_TRUE(doc["changed"].as<bool>());
@@ -277,7 +277,7 @@ static void test_updateConfigHandler_partial_update() {
       .AlwaysReturn(1);
   
   // Set initial config
-  DynamicJsonDocument initialConfig(256);
+  JsonDocument initialConfig;
   initialConfig["enabled"] = true;
   initialConfig["exampleValue"] = 100;
   initialConfig["exampleString"] = "initial";
@@ -304,7 +304,7 @@ static void test_updateConfigHandler_no_changes() {
       .AlwaysReturn(1);
   
   // Set initial config
-  DynamicJsonDocument initialConfig(256);
+  JsonDocument initialConfig;
   initialConfig["enabled"] = true;
   initialConfig["exampleValue"] = 100;
   module.__test_applyConfig(initialConfig.as<JsonVariant>());
@@ -315,7 +315,7 @@ static void test_updateConfigHandler_no_changes() {
   
   TEST_ASSERT_EQUAL(200, res.getStatus());
   
-  StaticJsonDocument<256> doc;
+  JsonDocument doc;
   deserializeJson(doc, res.getContent());
   TEST_ASSERT_TRUE(doc["success"].as<bool>());
   TEST_ASSERT_FALSE(doc["changed"].as<bool>());

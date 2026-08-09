@@ -87,19 +87,19 @@ void WebModuleExample::parseConfig(const JsonVariant &config) {
   // TODO: Parse your module's configuration parameters
   // Customize these based on your module's needs
   
-  if (config.containsKey("enabled")) {
+  if (!config["enabled"].isNull()) {
     enabled = config["enabled"].as<bool>();
-    DEBUG_PRINTF("Web Module Example: Configured enabled: %s\n", 
+    DEBUG_PRINTF("Web Module Example: Configured enabled: %s\n",
                  enabled ? "true" : "false");
   }
 
-  if (config.containsKey("exampleValue")) {
+  if (!config["exampleValue"].isNull()) {
     exampleValue = config["exampleValue"].as<int>();
-    DEBUG_PRINTF("Web Module Example: Configured exampleValue: %d\n", 
+    DEBUG_PRINTF("Web Module Example: Configured exampleValue: %d\n",
                  exampleValue);
   }
 
-  if (config.containsKey("exampleString")) {
+  if (!config["exampleString"].isNull()) {
     exampleString = config["exampleString"].as<const char*>();
     DEBUG_PRINTF("Web Module Example: Configured exampleString: %s\n", 
                  exampleString.c_str());
@@ -275,7 +275,7 @@ void WebModuleExample::configHandler(RequestT &req, ResponseT &res) {
 
 void WebModuleExample::updateConfigHandler(RequestT &req, ResponseT &res) {
   // Parse JSON from request body
-  DynamicJsonDocument doc(512); // Adjust size based on your config complexity
+  JsonDocument doc;
   DeserializationError error = deserializeJson(doc, req.getBody());
 
   if (error) {
@@ -293,7 +293,7 @@ void WebModuleExample::updateConfigHandler(RequestT &req, ResponseT &res) {
   // Apply configuration updates
   bool changed = false;
   
-  if (doc.containsKey("enabled")) {
+  if (!doc["enabled"].isNull()) {
     bool newEnabled = doc["enabled"].as<bool>();
     if (newEnabled != enabled) {
       enabled = newEnabled;
@@ -303,7 +303,7 @@ void WebModuleExample::updateConfigHandler(RequestT &req, ResponseT &res) {
     }
   }
 
-  if (doc.containsKey("exampleValue")) {
+  if (!doc["exampleValue"].isNull()) {
     int newValue = doc["exampleValue"].as<int>();
     if (newValue != exampleValue) {
       exampleValue = newValue;
@@ -312,7 +312,7 @@ void WebModuleExample::updateConfigHandler(RequestT &req, ResponseT &res) {
     }
   }
 
-  if (doc.containsKey("exampleString")) {
+  if (!doc["exampleString"].isNull()) {
     const char* newString = doc["exampleString"].as<const char*>();
     if (exampleString != newString) {
       exampleString = newString;
