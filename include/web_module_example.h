@@ -4,10 +4,9 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <interface/auth_types.h>
-#include <interface/core/web_request_core.h>
-#include <interface/core/web_response_core.h>
 #include <interface/openapi_factory.h>
 #include <interface/openapi_types.h>
+#include <interface/request_response_types.h>
 #include <interface/utils/route_variant.h>
 #include <interface/web_module_interface.h>
 #include <utility>
@@ -55,15 +54,8 @@ public:
     return "Example/boilerplate web module - customize for your needs";
   }
 
-  // Platform-specific request/response typedefs for unified handlers
-  // This allows the same handler code to work on both ESP32 and native tests
-#if defined(ARDUINO) || defined(ESP_PLATFORM)
-  using RequestT = WebRequest;
-  using ResponseT = WebResponse;
-#else
-  using RequestT = WebRequestCore;
-  using ResponseT = WebResponseCore;
-#endif
+  // RequestT/ResponseT are provided by <interface/request_response_types.h>
+  // and select the correct request/response type per platform.
 
   // Route handler methods (unified signatures for ESP32 and native platforms)
   // Customize these for your module's functionality
