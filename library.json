@@ -1,6 +1,6 @@
 {
     "name": "web_module_example",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Example/boilerplate web module for ESP32 with WebPlatform - use as template for new modules",
     "keywords": "webplatform, module, template, boilerplate, example, esp32",
     "repository": {
@@ -17,7 +17,7 @@
     "homepage": "https://github.com/andrewmherren/web_module_example",
     "dependencies": {
         "bblanchon/ArduinoJson": "^7.0.0",
-        "web_platform_interface": "https://github.com/andrewmherren/web_platform_interface.git#c81f94625bd560506951778d7b770a7c158b33e8"
+        "web_platform_interface": "https://github.com/andrewmherren/web_platform_interface.git#v0.3.0"
     },
     "frameworks": "*",
     "platforms": [

@@ -1,174 +1,110 @@
 # Assets Directory
 
-This directory is for storing static web assets (HTML, CSS, JavaScript) as PROGMEM header files.
+Web assets (HTML, CSS, JavaScript) get compiled into the firmware as
+PROGMEM string constants, but you don't write those `.h` files by hand -
+you write real `.html`/`.css`/`.js` files under `assets/src/`, and a build
+script (`generate_web_assets.py`, part of `web_platform`) converts them into
+the `assets/*.h` headers that actually get `#include`d and compiled.
 
-## Creating Asset Files
+## Adding an asset
 
-Convert your web assets into C++ header files with PROGMEM storage:
+1. Create the real file under `assets/src/`, e.g. `assets/src/example_page.html`.
+   Write normal HTML/CSS/JS here - real editor syntax highlighting/linting
+   works because it's a real file with the right extension.
 
-### Example HTML Asset
+2. Make sure `web_platform` is in this project's `lib_deps` (it almost
+   certainly already is, since you need it to register routes/serve
+   responses anyway), and add the generator as an `extra_scripts` entry in
+   `platformio.ini` if it isn't there already:
 
-Create `example_page_html.h`:
+   ```ini
+   extra_scripts =
+       ${test_base.extra_scripts}
+       .pio/libdeps/${this.__env__}/web_platform/scripts/generate_web_assets.py
+   ```
 
-```cpp
-#ifndef EXAMPLE_PAGE_HTML_H
-#define EXAMPLE_PAGE_HTML_H
+   (Use the literal env name instead of `${this.__env__}` if that
+   substitution doesn't resolve for your PlatformIO version - see how
+   `usb_pd_controller`/`maker_api` wire this in for a working example.)
 
-#include <Arduino.h>
+3. Build (`pio run`/`pio test`) - the script runs automatically and writes
+   `assets/example_page_html.h`, containing `const char EXAMPLE_PAGE_HTML[]
+   PROGMEM = ...`. **Commit the generated header alongside your source
+   change** - anything that consumes this repo as a pinned `lib_dep` never
+   runs the generator itself, so the checked-in header has to already be
+   current (same reason `include/version_autogen.h` is committed too).
 
-const char EXAMPLE_PAGE_HTML[] PROGMEM = R"rawliteral(
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Module</title>
-  <link rel="stylesheet" href="/my-module/assets/style.css">
-</head>
-<body>
-  <div class="container">
-    <h1>My Web Module</h1>
-    <p>Custom content here...</p>
-  </div>
-  <script src="/my-module/assets/script.js"></script>
-</body>
-</html>
-)rawliteral";
+### Naming convention
 
-#endif // EXAMPLE_PAGE_HTML_H
-```
+No configuration needed for the common case: `assets/src/<name>.<ext>`
+generates `assets/<name>_<ext>.h`, with the PROGMEM array named
+`<NAME>_<EXT>` and the include guard `<NAME>_<EXT>_H`. For example:
 
-### Example CSS Asset
+- `assets/src/example_page.html` -> `assets/example_page_html.h`,
+  `EXAMPLE_PAGE_HTML`
+- `assets/src/example_style.css` -> `assets/example_style_css.h`,
+  `EXAMPLE_STYLE_CSS`
+- `assets/src/example_script.js` -> `assets/example_script_js.h`,
+  `EXAMPLE_SCRIPT_JS`
 
-Create `example_style_css.h`:
+If you need a different header filename, variable name, or guard than that
+produces, add an entry to `assets/asset_manifest.json` (create it if it
+doesn't exist) rather than fighting the naming convention:
 
-```cpp
-#ifndef EXAMPLE_STYLE_CSS_H
-#define EXAMPLE_STYLE_CSS_H
-
-#include <Arduino.h>
-
-const char EXAMPLE_STYLE_CSS[] PROGMEM = R"rawliteral(
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 20px;
-  background-color: #f5f5f5;
+```json
+{
+  "example_style.css": { "var": "CUSTOM_STYLE_NAME" }
 }
-
-.container {
-  max-width: 800px;
-  margin: 0 auto;
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-)rawliteral";
-
-#endif // EXAMPLE_STYLE_CSS_H
 ```
 
-### Example JavaScript Asset
+**One file, one constant.** If you're tempted to put two unrelated
+HTML/JS/CSS documents in one source file (e.g. a normal page and an error
+variant), don't - each source file maps to exactly one generated constant.
+Use two files instead.
 
-Create `example_script_js.h`:
+## Using assets in your module
+
+Include the generated header and serve it in a route handler:
 
 ```cpp
-#ifndef EXAMPLE_SCRIPT_JS_H
-#define EXAMPLE_SCRIPT_JS_H
-
-#include <Arduino.h>
-
-const char EXAMPLE_SCRIPT_JS[] PROGMEM = R"rawliteral(
-(function() {
-  'use strict';
-  
-  // Your JavaScript code here
-  console.log('Module loaded');
-  
-  // Example: Fetch status periodically
-  function updateStatus() {
-    fetch('/my-module/api/status')
-      .then(response => response.json())
-      .then(data => {
-        console.log('Status:', data);
-        // Update UI with status data
-      })
-      .catch(error => console.error('Error:', error));
-  }
-  
-  // Update every 5 seconds
-  setInterval(updateStatus, 5000);
-  updateStatus(); // Initial call
-})();
-)rawliteral";
-
-#endif // EXAMPLE_SCRIPT_JS_H
+#include "../assets/example_page_html.h"
+#include "../assets/example_style_css.h"
+#include "../assets/example_script_js.h"
 ```
 
-## Using Assets in Your Module
+```cpp
+// HTML page
+res.setProgmemContent(EXAMPLE_PAGE_HTML, "text/html");
 
-1. **Include the asset header** in your `.cpp` file:
-   ```cpp
-   #include "../assets/example_page_html.h"
-   #include "../assets/example_style_css.h"
-   #include "../assets/example_script_js.h"
-   ```
+// CSS stylesheet
+res.setProgmemContent(EXAMPLE_STYLE_CSS, "text/css");
+res.setHeader("Cache-Control", "public, max-age=3600");
 
-2. **Serve the asset** in your route handler:
-   ```cpp
-   // HTML page
-   res.setProgmemContent(EXAMPLE_PAGE_HTML, "text/html");
-   
-   // CSS stylesheet
-   res.setProgmemContent(EXAMPLE_STYLE_CSS, "text/css");
-   res.setHeader("Cache-Control", "public, max-age=3600");
-   
-   // JavaScript
-   res.setProgmemContent(EXAMPLE_SCRIPT_JS, "application/javascript");
-   res.setHeader("Cache-Control", "public, max-age=3600");
-   ```
-
-3. **Register the routes** in `getHttpRoutes()`:
-   ```cpp
-   WebRoute("/assets/style.css", WebModule::WM_GET,
-            [](RequestT &req, ResponseT &res) {
-              res.setProgmemContent(EXAMPLE_STYLE_CSS, "text/css");
-              res.setHeader("Cache-Control", "public, max-age=3600");
-            },
-            {AuthType::NONE})
-   ```
-
-## Asset Generation Tools
-
-You can use tools to convert files to header format:
-
-```bash
-# Example Python script to convert file to header
-python -c "
-import sys
-with open(sys.argv[1], 'r') as f:
-    content = f.read()
-name = sys.argv[1].upper().replace('.', '_').replace('/', '_')
-print(f'#ifndef {name}_H')
-print(f'#define {name}_H')
-print('#include <Arduino.h>')
-print(f'const char {name}[] PROGMEM = R\"rawliteral(')
-print(content)
-print(')rawliteral\";')
-print(f'#endif // {name}_H')
-" input.html > output_html.h
+// JavaScript
+res.setProgmemContent(EXAMPLE_SCRIPT_JS, "application/javascript");
+res.setHeader("Cache-Control", "public, max-age=3600");
 ```
 
-## Best Practices
+Register the routes in `getHttpRoutes()`:
 
-1. **Minify assets** before converting to reduce flash memory usage
-2. **Use raw string literals** (`R"rawliteral()rawliteral"`) to preserve formatting
-3. **Add cache headers** for static assets to improve performance
-4. **Keep assets small** - flash memory is limited on ESP32
-5. **Consider gzip compression** for large assets (WebPlatform supports this)
+```cpp
+WebRoute("/assets/style.css", WebModule::WM_GET,
+         [](RequestT &req, ResponseT &res) {
+           res.setProgmemContent(EXAMPLE_STYLE_CSS, "text/css");
+           res.setHeader("Cache-Control", "public, max-age=3600");
+         },
+         {AuthType::NONE})
+```
 
-## Memory Considerations
+## Best practices
+
+1. **Minify assets** before committing to reduce flash memory usage, if size
+   becomes a concern
+2. **Add cache headers** for static assets to improve performance
+3. **Keep assets small** - flash memory is limited on ESP32
+4. **Consider gzip compression** for large assets (WebPlatform supports this)
+
+## Memory considerations
 
 - PROGMEM stores data in flash memory, not RAM
 - This is essential for ESP32 with limited RAM
