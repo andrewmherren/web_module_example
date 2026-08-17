@@ -1,6 +1,6 @@
 {
     "name": "web_module_example",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Example/boilerplate web module for ESP32 with WebPlatform - use as template for new modules",
     "keywords": "webplatform, module, template, boilerplate, example, esp32",
     "repository": {
